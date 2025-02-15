@@ -1,19 +1,43 @@
 import { Router } from "express";
+import Expense from "../models/expense.model.js";
 
 const expenseRouter = Router();
 
-expenseRouter.get("/", (req, res) => {
+expenseRouter.get("/", async (req, res) => {
+  const expenses = await Expense.find();
+
   res.status(200).json({
     success: true,
-    data: "object containing all the expenses(only name, amount and type) in a list",
+    data: expenses,
   });
 });
 
-expenseRouter.post("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    data: "Added expense succesfully",
-  });
+expenseRouter.post("/", async (req, res) => {
+  const data = req.body;
+  try {
+    const expense = new Expense(data);
+    await expense.validate();
+    const savedExpense = await expense.save();
+
+    res.status(201).json({
+      success: true,
+      data: savedExpense,
+      message: "Added expense succesfully",
+    });
+  } catch (error) {
+    console.log((error as Error).message);
+    if ((error as Error).name === "ValidationError") {
+      res.status(400).json({
+        success: false,
+        message: (error as Error).message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
 });
 
 expenseRouter.get("/:id", (req, res) => {
@@ -36,7 +60,5 @@ expenseRouter.delete("/:id", (req, res) => {
     data: "Delete expense with id successfully",
   });
 });
-
-
 
 export default expenseRouter;

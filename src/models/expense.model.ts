@@ -21,6 +21,7 @@ const expenseSchema = new mongoose.Schema({
     default: "other",
     enum: [
       "lifestyle",
+      "food",
       "medical",
       "finance",
       "miscellaneous",
@@ -31,13 +32,17 @@ const expenseSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    required: true,
     default: new Date(),
   },
   paymentMethod: {
     type: String,
     enum: ["cash", "credit card", "upi", "bank transfer", "other"],
     default: "other",
+  },
+  notes: {
+    type: String,
+    maxLength: [100, "note can't be longer than 100 words"],
+    default: "",
   },
 });
 
