@@ -1,18 +1,25 @@
 import { Request, Response, NextFunction } from "express";
 import Expense from "../models/expense.model.js";
+import { ExpenseQuery, sortFields } from "../types/expense.js";
 
 export const getExpenses = async (
-  req: Request,
+  req: Request<unknown, unknown, unknown, ExpenseQuery>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const expenses = await Expense.find();
+    const { order = "asc", sortBy = "name" } = req.query;
+
+    const sortField = sortFields.includes(sortBy) ? sortBy : "amount";
+    const sortOrder = order === 'asc' ? 1 : -1;
+    console.log("sorting by", sortField, "in order =",sortOrder)
+    const expenses = await Expense.find().sort({ [sortField]: sortOrder });
 
     res.status(200).json({
       success: true,
       data: expenses,
     });
+
   } catch (error) {
     next(error);
   }
@@ -71,7 +78,6 @@ export const updateExpense = async (
       success: true,
       data: "logged in console",
     });
-    
   } catch (error) {
     next(error);
   }
