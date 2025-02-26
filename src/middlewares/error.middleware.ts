@@ -1,33 +1,28 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 
-interface CustomError extends Error {
-  statusCode?: number;
-  code?: string;
-  errors?: Record<string, any>;
-  keyValue?: Record<string, any>;
-}
+import { CustomError } from "../types/error.js";
 
 const ErrorResponses = {
   VALIDATION_ERROR: {
     statusCode: 400,
-    message: "Invalid input data"
+    message: "Invalid input data",
   },
   NOT_FOUND: {
     statusCode: 404,
-    message: "Resource not found"
+    message: "Resource not found",
   },
   DUPLICATE_ERROR: {
     statusCode: 409,
-    message: "Duplicate resource found"
+    message: "Duplicate resource found",
   },
   UNAUTHORIZED: {
     statusCode: 401,
-    message: "Authentication required"
+    message: "Authentication required",
   },
   FORBIDDEN: {
     statusCode: 403,
-    message: "Access forbidden"
-  }
+    message: "Access forbidden",
+  },
 } as const;
 
 const errorMiddleware: ErrorRequestHandler = (
@@ -53,7 +48,7 @@ const errorMiddleware: ErrorRequestHandler = (
       break;
 
     case "MongoServerError":
-      if (err.code === "11000") { 
+      if (err.code === "11000") {
         statusCode = ErrorResponses.DUPLICATE_ERROR.statusCode;
         message = ErrorResponses.DUPLICATE_ERROR.message;
         errors = err.keyValue || {};
@@ -73,8 +68,8 @@ const errorMiddleware: ErrorRequestHandler = (
     errors: Object.keys(errors).length > 0 ? errors : undefined,
     ...(process.env.NODE_ENV === "development" && {
       stack: err.stack,
-      details: err
-    })
+      details: err,
+    }),
   };
 
   if (process.env.NODE_ENV !== "production") {
@@ -83,7 +78,7 @@ const errorMiddleware: ErrorRequestHandler = (
       path: req.path,
       method: req.method,
       body: req.body,
-      error: err
+      error: err,
     });
   }
 

@@ -11,15 +11,13 @@ export const getExpenses = async (
     const { order = "asc", sortBy = "name" } = req.query;
 
     const sortField = sortFields.includes(sortBy) ? sortBy : "amount";
-    const sortOrder = order === 'asc' ? 1 : -1;
-    console.log("sorting by", sortField, "in order =",sortOrder)
+    const sortOrder = order === "asc" ? 1 : -1;
     const expenses = await Expense.find().sort({ [sortField]: sortOrder });
 
     res.status(200).json({
       success: true,
       data: expenses,
     });
-
   } catch (error) {
     next(error);
   }
