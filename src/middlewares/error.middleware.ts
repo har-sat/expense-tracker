@@ -1,19 +1,30 @@
 import { Request, Response, NextFunction } from "express";
 
-import { CustomError } from "../types/error.js";
+import { ApiError } from "../types/error.js";
 import mongoose from "mongoose";
 import { MongoNetworkError } from "mongodb";
 
+/*
+
+DUPLICATION ERROR DOESN'T WORK
+
+PLEASE FIX IT 🙏🏼
+
+FWEAH
+¥€
+
+*/
+
 const errorMiddleware = (
-  err: CustomError,
+  err: ApiError,
   req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction
 ) => {
   console.log(err);
-  let statusCode = err.statusCode || 500;
-  let errorType = "UnkownError";
+  let statusCode = err.statusCode;
+  let errorType = err.errorType;
   let message = err.message || "Internal Server Error";
   let details: unknown;
 

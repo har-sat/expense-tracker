@@ -3,6 +3,8 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import { ApiError } from "../types/error.js";
+
 import User from "../models/user.model.js";
 import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.js";
 
@@ -18,9 +20,6 @@ export const signUp = async (
       { username, email, password: await bcrypt.hash(password, 10) },
     ]);
 
-    if (!JWT_SECRET || !JWT_EXPIRES_IN) {
-      throw new Error("JWT_SECRET is not defined");
-    }
     const token = jwt.sign({ userId: newUsers[0]._id }, JWT_SECRET, {
       expiresIn: parseInt(JWT_EXPIRES_IN),
     });
@@ -46,11 +45,17 @@ export const signIn = async (
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new Error(`User with email ${email} doesn't exist`);
+      const error = new ApiError(
+        `User with email:${email} doens't exist`,
+        404,
+        "ClientError"
+      );
+      throw error;
     }
 
     if (!(await bcrypt.compare(password, user.password))) {
-      throw new Error("Invalid Password");
+      const error = new ApiError("Invalid Password", 401, "ClientError");
+      throw error;
     }
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
