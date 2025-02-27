@@ -1,88 +1,59 @@
-import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { CustomError } from "../types/error.js";
+import mongoose from "mongoose";
+import { MongoNetworkError } from "mongodb";
 
-const ErrorResponses = {
-  VALIDATION_ERROR: {
-    statusCode: 400,
-    message: "Invalid input data",
-  },
-  NOT_FOUND: {
-    statusCode: 404,
-    message: "Resource not found",
-  },
-  DUPLICATE_ERROR: {
-    statusCode: 409,
-    message: "Duplicate resource found",
-  },
-  UNAUTHORIZED: {
-    statusCode: 401,
-    message: "Authentication required",
-  },
-  FORBIDDEN: {
-    statusCode: 403,
-    message: "Access forbidden",
-  },
-} as const;
-
-const errorMiddleware: ErrorRequestHandler = (
+const errorMiddleware = (
   err: CustomError,
   req: Request,
   res: Response,
-  next: NextFunction
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction
 ) => {
+  console.log(err);
   let statusCode = err.statusCode || 500;
+  let errorType = "UnkownError";
   let message = err.message || "Internal Server Error";
-  let errors: Record<string, any> = {};
+  let details: unknown;
 
-  switch (err.name) {
-    case "ValidationError":
-      statusCode = ErrorResponses.VALIDATION_ERROR.statusCode;
-      message = ErrorResponses.VALIDATION_ERROR.message;
-      errors = err.errors || {};
-      break;
-
-    case "CastError":
-      statusCode = ErrorResponses.NOT_FOUND.statusCode;
-      message = ErrorResponses.NOT_FOUND.message;
-      break;
-
-    case "MongoServerError":
-      if (err.code === "11000") {
-        statusCode = ErrorResponses.DUPLICATE_ERROR.statusCode;
-        message = ErrorResponses.DUPLICATE_ERROR.message;
-        errors = err.keyValue || {};
-      }
-      break;
-
-    case "JsonWebTokenError":
-    case "TokenExpiredError":
-      statusCode = ErrorResponses.UNAUTHORIZED.statusCode;
-      message = ErrorResponses.UNAUTHORIZED.message;
-      break;
+  if (err instanceof mongoose.Error.ValidationError) {
+    statusCode = 400;
+    errorType = "ValidationError";
+    message = "Validation Error";
+    details = err.message.split(", ");
+  } else if (err instanceof mongoose.Error.CastError) {
+    statusCode = 400;
+    errorType = "CastError";
+    message = `Invalid ${err.path} : ${err.value}`;
+  } else if (err instanceof mongoose.mongo.MongoServerError) {
+    if (err.code === 11000) {
+      statusCode = 409;
+      errorType = "DuplicateKeyError";
+      const field = Object.keys(err.keyValue)[0];
+      const value = err.keyValue[field];
+      message = `Duplicate value: ${field} with value: ${value}`;
+    }
+  } else if (err instanceof mongoose.Error.VersionError) {
+    statusCode = 409;
+    errorType = "VersionError";
+    message = "Document has been modified by another process";
+  } else if (err instanceof MongoNetworkError) {
+    statusCode = 503;
+    errorType = "ConnectionError";
+    message = "Database Connection Error";
   }
 
-  const errorResponse = {
-    success: false,
+  console.log("ERROR HAS OCCURED");
+  console.log(`[${errorType}] ${statusCode}`);
+  console.log(`${details}`);
+
+  res.status(statusCode).json({
+    sucess: false,
+    errorType,
     message,
-    errors: Object.keys(errors).length > 0 ? errors : undefined,
-    ...(process.env.NODE_ENV === "development" && {
-      stack: err.stack,
-      details: err,
-    }),
-  };
-
-  if (process.env.NODE_ENV !== "production") {
-    console.error(`[Error] ${message}`, {
-      statusCode,
-      path: req.path,
-      method: req.method,
-      body: req.body,
-      error: err,
-    });
-  }
-
-  res.status(statusCode).json(errorResponse);
+    details,
+  });
 };
 
 export default errorMiddleware;

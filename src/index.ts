@@ -10,17 +10,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("api/v1/auth", authRouter);
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/expense", expenseRouter);
 
 app.use(errorMiddleware);
-
-app.get("/", async (req, res) => {
-  res.send({
-    success: true,
-    message: "All routes are now only in api/v1/expense",
-  });
-});
 
 app.listen(PORT, async () => {
   console.log(`Listening on port http://localhost:${PORT}`);
