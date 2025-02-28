@@ -1,4 +1,6 @@
 import { Router } from "express";
+import authorize from "../middlewares/auth.middleware.js";
+
 import {
   createExpense,
   deleteExpense,
@@ -8,6 +10,8 @@ import {
 } from "../controllers/expense.controller.js";
 
 const expenseRouter = Router();
+
+expenseRouter.use(authorize);
 
 expenseRouter.get("/", getExpenses);
 
